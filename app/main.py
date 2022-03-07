@@ -6,6 +6,7 @@ from app.api.health.health_controller import health_router
 from app.api.account.account_controller import account_router
 from app.api.restaurant.restaurant_controller import restaurant_router
 from app.api.friends.friends_controller import friends_router
+from app.api.admin.admin_controller import admin_router
 
 
 app = FastAPI(title=settings.PROJECT_NAME)
@@ -14,6 +15,7 @@ app.include_router(health_router, tags=["Health"])
 app.include_router(account_router, tags=["Account Operations"])
 app.include_router(restaurant_router, prefix="/restaurants", tags=["Restaurant Operations"])
 app.include_router(friends_router, prefix="/friends", tags=["Friend Operations"])
+app.include_router(admin_router, prefix="/admin", tags=["Admin Operations"])
 
 app.add_middleware(
     CORSMiddleware,

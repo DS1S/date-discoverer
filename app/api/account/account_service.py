@@ -25,7 +25,10 @@ async def create_new_account(email, password):
             "roles": [Roles.BASE_USER],
             "friends": [],
             "blockedUsers": [],
-            "friendRequests": []
+            "friendRequests": [],
+            "banReason": None,
+            "banMsg": None,
+            "bannerId": None
         }
 
         await user_collection.insert_one(
