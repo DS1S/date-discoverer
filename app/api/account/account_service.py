@@ -22,7 +22,10 @@ async def create_new_account(email, password):
             "email": email,
             "hashed_password": get_password_hash(password),
             "disabled": False,
-            "roles": [Roles.BASE_USER]
+            "roles": [Roles.BASE_USER],
+            "friends": [],
+            "blockedUsers": [],
+            "friendRequests": []
         }
 
         await user_collection.insert_one(
