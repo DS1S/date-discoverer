@@ -26,6 +26,18 @@ class FoodCategory(str, Enum):
     SEAFOOD = "seafood"
     DAIRY = "dairy"
     YEAST_CREATED = "pastry/bread"
+    NOODLE = "noodle"
+
+    @staticmethod
+    def fields():
+        return [
+            FoodCategory.CHICKEN,
+            FoodCategory.BEEF,
+            FoodCategory.SEAFOOD,
+            FoodCategory.DAIRY,
+            FoodCategory.YEAST_CREATED,
+            FoodCategory.NOODLE
+        ]
 
 
 class RestaurantCategory(str, Enum):
@@ -36,6 +48,18 @@ class RestaurantCategory(str, Enum):
     FAST_FOOD = "fast food"
     COFFEE = "coffee"
     DESSERT = "dessert"
+
+    @staticmethod
+    def fields():
+        return [
+            RestaurantCategory.KOREAN,
+            RestaurantCategory.JAPANESE,
+            RestaurantCategory.ITALIAN,
+            RestaurantCategory.CHINESE,
+            RestaurantCategory.FAST_FOOD,
+            RestaurantCategory.COFFEE,
+            RestaurantCategory.DESSERT
+        ]
 
 
 class MenuItemModel(CustomModel):

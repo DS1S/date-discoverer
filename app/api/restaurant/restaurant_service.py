@@ -1,3 +1,5 @@
+from typing import List
+
 from fastapi import HTTPException, status
 
 from pymongo import ReturnDocument
@@ -8,10 +10,16 @@ from app.db.model_utils import PyObjectId
 
 from app.api.restaurant.restaurant_models import (
     RestaurantModel,
-    RestaurantUpdateModel
+    RestaurantUpdateModel,
+    PriceRating,
+    RestaurantCategory,
+    FoodCategory
 )
 
-from app.lib.misc.general import pop_from_dict
+from app.lib.misc.general import (
+    pop_from_dict,
+    within_radius
+)
 
 
 async def get_all_restaurants():
@@ -117,3 +125,60 @@ async def update_restaurant_info(
         )
 
     return restaurant_to_update
+
+
+async def query_match_restaurants(
+    minimum_price_rating: PriceRating,
+    restaurant_categories: RestaurantCategory,
+    lat: float,
+    long: float,
+    radius: float,
+    has_open_table: bool,
+    minimum_rating: float,
+    minimum_reviews: int,
+    includes_vegan_options: bool,
+    provides_food_categories: List[FoodCategory],
+    max_to_display: int
+):
+    query = {
+        "reviews": {"$size": {"$ge": minimum_reviews}},
+        "reviewRating": {"$ge": minimum_rating},
+        "restaurantCategory": {"$in": restaurant_categories},
+        "priceRating": {"$ge": minimum_price_rating},
+        "$and": []
+    }
+
+    if has_open_table:
+        query["$and"].append({"openTableUrl": {"$ne": None}})
+
+    if includes_vegan_options or provides_food_categories:
+        if includes_vegan_options:
+            vegan_filter = {"topMenuItems": {"$elemMatch": {"isVegan": True}}}
+            query["$and"].append(vegan_filter)
+        if provides_food_categories:
+            food_filter = {
+                "topMenuItems": {
+                    "$elemMatch": {
+                        "foodCategory": {
+                            "$in": provides_food_categories
+                        }
+                    }
+                }
+            }
+            query["$and"].append(food_filter)
+
+    restaurants = await restaurant_collection.find(query).to_list(length=None)
+
+    valid_restaurants = []
+
+    for restaurant in restaurants:
+        if within_radius(
+            lat,
+            long,
+            restaurant["lat"],
+            restaurant["long"],
+            radius
+        ):
+            valid_restaurants.append(restaurant)
+
+    return valid_restaurants[:max_to_display]
