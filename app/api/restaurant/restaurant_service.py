@@ -129,7 +129,7 @@ async def update_restaurant_info(
 
 async def query_match_restaurants(
     minimum_price_rating: PriceRating,
-    restaurant_categories: RestaurantCategory,
+    restaurant_categories: List[RestaurantCategory],
     lat: float,
     long: float,
     radius: float,
@@ -138,13 +138,14 @@ async def query_match_restaurants(
     minimum_reviews: int,
     includes_vegan_options: bool,
     provides_food_categories: List[FoodCategory],
+    max_spend: int,
     max_to_display: int
 ):
     query = {
-        "reviews": {"$size": {"$ge": minimum_reviews}},
-        "reviewRating": {"$ge": minimum_rating},
+        "$expr": {"$gte": [{"$size": "$reviews"}, minimum_reviews]},
+        "reviewRating": {"$gte": minimum_rating},
         "restaurantCategory": {"$in": restaurant_categories},
-        "priceRating": {"$ge": minimum_price_rating},
+        "priceRating": {"$gte": minimum_price_rating},
         "$and": []
     }
 
@@ -166,6 +167,16 @@ async def query_match_restaurants(
                 }
             }
             query["$and"].append(food_filter)
+
+    query["$and"].append({
+        "topMenuItems": {
+            "$elemMatch": {
+                "price": {
+                    "$lte": max_spend
+                }
+            }
+        }
+    })
 
     restaurants = await restaurant_collection.find(query).to_list(length=None)
 

@@ -27,6 +27,7 @@ class FoodCategory(str, Enum):
     DAIRY = "dairy"
     YEAST_CREATED = "pastry/bread"
     NOODLE = "noodle"
+    VEGETABLE = "vegetable"
 
     @staticmethod
     def fields():
@@ -36,7 +37,8 @@ class FoodCategory(str, Enum):
             FoodCategory.SEAFOOD,
             FoodCategory.DAIRY,
             FoodCategory.YEAST_CREATED,
-            FoodCategory.NOODLE
+            FoodCategory.NOODLE,
+            FoodCategory.VEGETABLE
         ]
 
 
@@ -48,6 +50,12 @@ class RestaurantCategory(str, Enum):
     FAST_FOOD = "fast food"
     COFFEE = "coffee"
     DESSERT = "dessert"
+    PUB = "pub"
+    MEXICAN = "mexican"
+    INDIAN = "indian"
+    AMERICAN = "american"
+    CANADIAN = "canadian"
+    SOUTH_AMERICAN = "south american"
 
     @staticmethod
     def fields():
@@ -58,7 +66,13 @@ class RestaurantCategory(str, Enum):
             RestaurantCategory.CHINESE,
             RestaurantCategory.FAST_FOOD,
             RestaurantCategory.COFFEE,
-            RestaurantCategory.DESSERT
+            RestaurantCategory.DESSERT,
+            RestaurantCategory.PUB,
+            RestaurantCategory.MEXICAN,
+            RestaurantCategory.INDIAN,
+            RestaurantCategory.AMERICAN,
+            RestaurantCategory.CANADIAN,
+            RestaurantCategory.SOUTH_AMERICAN
         ]
 
 
@@ -96,6 +110,37 @@ class RestaurantModel(CustomModel):
     # Location Data
     lat: float = Field(..., ge=-90, le=90)
     long: float = Field(..., ge=-180, le=180)
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "name": "McDonald's",
+                "city": "Toronto",
+                "openTableUrl": None,
+                "reviewRating": 4.5,
+                "priceRating": "$",
+                "restaurantCategory": "fast food",
+                "reviews": [
+                    {
+                        "reviewMsg": "Great place for burgers",
+                        "rating": 4.0,
+                        "reviewDate": "2022-03-06",
+                        "numberOfPreviousReviews": 43
+                    }
+                ],
+                "topMenuItems": [
+                    {
+                        "name": "Big Mac",
+                        "price": 5.29,
+                        "menuCategory": "main",
+                        "isVegan": False,
+                        "foodCategory": "beef"
+                    }
+                ],
+                "lat": 32.231,
+                "long": 123.12,
+            }
+        }
 
 
 class RestaurantUpdateModel(CustomModel):

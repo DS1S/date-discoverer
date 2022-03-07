@@ -87,17 +87,18 @@ def get_user_with_roles(roles: List[Roles]):
     async def get_current_active_user_with_roles(
         current_user: User = Depends(get_current_user)
     ):
-        if current_user.disabled:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Banned user")
-
-        for role in roles:
-            if role not in current_user.roles:
+        if Roles.ADMIN not in current_user.roles:
+            if current_user.disabled:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="User does not have required role for operation."
-                )
+                    detail="Banned user")
+
+            for role in roles:
+                if role not in current_user.roles:
+                    raise HTTPException(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail="User does not have required role for operation."
+                    )
         return current_user
     return get_current_active_user_with_roles
 

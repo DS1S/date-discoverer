@@ -36,14 +36,17 @@ async def retrieve_all_restaurants(
     return await get_all_restaurants()
 
 
-@restaurant_router.get("/discover-restaurants")
+@restaurant_router.get(
+    "/discover-restaurants",
+    response_model=List[RestaurantModel]
+)
 async def discover_restaurants(
     user: User = Depends(get_user_with_roles([
         Roles.BASE_USER
     ])),
     minimum_price_rating: Optional[PriceRating] = Query(
         PriceRating.LOW,
-        alias="priceRating"
+        alias="minimumPriceRating"
     ),
     restaurant_categories: Optional[List[RestaurantCategory]] = Query(
         RestaurantCategory.fields(),
@@ -52,6 +55,7 @@ async def discover_restaurants(
     lat: float = Query(..., ge=-90, le=90),
     long: float = Query(..., ge=-180, le=180),
     radius: float = Query(..., gt=0),
+    max_spend: int = Query(..., ge=0, alias="maxSpend"),
     has_open_table: Optional[bool] = Query(False, alias="hasOpenTable"),
     minimum_rating: Optional[float] = Query(0, ge=0, alias="minimumRating"),
     minimum_reviews: Optional[int] = Query(0, ge=0, alias="minimumReviews"),
@@ -76,6 +80,7 @@ async def discover_restaurants(
         minimum_reviews,
         includes_vegan_options,
         provides_food_categories,
+        max_spend,
         max_to_display
     )
 
