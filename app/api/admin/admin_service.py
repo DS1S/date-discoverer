@@ -70,9 +70,3 @@ async def disable_user_accounts_by_email_and_id(
 
 async def show_all_users():
     return await user_collection.find().to_list(length=None)
-
-
-
-
-
-
