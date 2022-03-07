@@ -22,6 +22,11 @@ class FriendRequestAcceptedResponse(CustomModel):
     date_accepted: date = Field(default=date.today(), alias="dateAccepted")
 
 
+class FriendRemovedResponse(CustomModel):
+    msg: str = Field(...)
+    date_removed: date = Field(default=date.today(), alias="dateRemoved")
+
+
 class BlockUserResponseModel(CustomModel):
     blocked_user: str = Field(..., alias="blockedUser")
     date_blocked: date = Field(default=date.today(), alias="dateBlocked")

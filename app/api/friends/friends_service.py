@@ -9,6 +9,13 @@ from app.lib.auth.auth_models import User
 from app.db.mongo_driver import user_collection
 
 
+def _pop_and_return(v, x: list):
+    for index, val in enumerate(x):
+        if val == v:
+            x.pop(index)
+            return x
+
+
 async def _find_user_to_operate_on(email):
     user_to_process = await user_collection.find_one({"email": email})
 
@@ -21,6 +28,47 @@ async def _find_user_to_operate_on(email):
     return user_to_process
 
 
+async def _update_for_block_on_user(user, user_to_block):
+    await user_collection.find_one_and_update(
+        {"_id": user.id},
+        [{"$set": {
+            "blockedUsers": {
+                "$cond": {
+                    "if": {
+                        "$not": {"$in": [user_to_block["_id"], "$blockedUsers"]}
+                    },
+                    "then": user.blocked_users + [user_to_block["_id"]],
+                    "else": "$blockedUsers"
+                }
+            },
+            "friendRequests": {
+                "$cond": {
+                    "if": {
+                        "$in": [user_to_block["email"], "$friendRequests.email"]
+                    },
+                    "then": _pop_and_return(
+                        user_to_block["email"],
+                        user.friend_requests
+                    ),
+                    "else": "$friendRequests"
+                }
+            },
+            "friends": {
+                "$cond": {
+                    "if": {
+                        "$in": [user_to_block["_id"], "$friends"]
+                    },
+                    "then": _pop_and_return(
+                        user_to_block["_id"],
+                        user.friends
+                    ),
+                    "else": "$friends"
+                }
+            }
+        }}]
+    )
+
+
 async def add_user_to_block_list(user: User, request: OperationOnUserModel):
     user_to_block = await _find_user_to_operate_on(request.email)
 
@@ -30,26 +78,16 @@ async def add_user_to_block_list(user: User, request: OperationOnUserModel):
             detail=f"User with email <{request.email} not found."
         )
 
-    await user_collection.find_one_and_update(
-        {"_id": user.id},
-        {
-            "$expr": {
-                "$cond": {
-                    "if": {
-                        "blockedUsers": {"$nin": [user_to_block["_id"]]}
-                    },
-                    "then": {
-                        "$push": {"blockedUsers": user_to_block["_id"]}
-                    }
-                }
-            }
-        }
+    await _update_for_block_on_user(user, user_to_block)
+    await _update_for_block_on_user(
+        User(**user_to_block),
+        user.dict(by_alias=True)
     )
 
     response = {
         "blocked_user": request.email,
         "date_blocked": date.today(),
-        "msg": f"User with email ${request.email} has been blocked successfully"
+        "msg": f"User with email {request.email} has been blocked successfully"
     }
 
     return response
@@ -65,30 +103,30 @@ async def add_to_friend_requests_of_user(
         return {
             "friend_request_sent": True,
             "date_sent": date.today(),
-            "msg": f"User with email ${request.email} "
+            "msg": f"User with email {request.email}"
                    f"has you blocked, no friend request was sent."
         }
 
     await user_collection.find_one_and_update(
         {"_id": user_to_send["_id"]},
-        {
-            "$expr": {
+        [{"$set": {
+            "friendRequests": {
                 "$cond": {
                     "if": {
-                        "friendRequests.email": {"$nin": [user.email]}
+                        "$not": {"$in": [user.email, "$friendRequests.email"]}
                     },
-                    "then": {
-                        "$push": {"friendRequests": request.dict(by_alias=True)}
-                    }
+                    "then": user_to_send["friendRequests"] +
+                    [{"email": user.email, "msg": request.msg}],
+                    "else": "$friendRequests"
                 }
             }
-        }
+        }}]
     )
 
     response = {
         "friend_request_sent": True,
         "date_sent": date.today(),
-        "msg": f"User with email ${request.email} "
+        "msg": f"User with email {request.email} "
                f"has been sent a friend request."
     }
 
@@ -99,14 +137,26 @@ async def add_user_to_friends_list(
     user: User,
     request: OperationOnUserModel
 ):
+    friend_to_add = await _find_user_to_operate_on(request.email)
+
+    if friend_to_add["_id"] in user.blocked_users:
+        return {
+            "msg": f"User with email {request.email} "
+                   f"is on your blocked list.",
+            "date_accepted": date.today()
+        }
+
     for index, friend_request in enumerate(user.friend_requests):
         if friend_request.email == request.email:
             friend_info = user.friend_requests.pop(index)
-            user.friends.append(
-                (await user_collection.find_one({
-                    "email": friend_info.email
-                }))["_id"]
-            )
+
+            friend_id = (await user_collection.find_one_and_update(
+                {"email": friend_info.email},
+                {"$push": {"friends": user.id}}
+            ))["_id"]
+
+            user.friends.append(friend_id)
+
             await user_collection.find_one_and_update(
                 {"_id": user.id},
                 {
@@ -116,6 +166,7 @@ async def add_user_to_friends_list(
                     }
                 }
             )
+
             return {
                 "msg": f"User with email {request.email} "
                        f"has been added to your friends list.",
@@ -127,6 +178,25 @@ async def add_user_to_friends_list(
         detail=f"User with email {request.email} "
                f"has not sent you a friend request."
     )
+
+
+async def remove_friend_from_list(
+    user: User,
+    request: OperationOnUserModel
+):
+    friend_to_remove = await _find_user_to_operate_on(request.email)
+
+    user.friends.pop(user.friends.index(friend_to_remove["_id"]))
+
+    await user_collection.find_one_and_update(
+        {"_id": user.id},
+        {"$set": {"friends": user.friends}}
+    )
+
+    return {
+        "msg": f"Friend {request.email} has been removed.",
+        "date_removed": date.today()
+    }
 
 
 async def show_all_friend_requests(user: User):

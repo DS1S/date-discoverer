@@ -6,7 +6,8 @@ from app.api.friends.friends_models import (
     OperationOnUserModel,
     FriendRequestResponseModel,
     BlockUserResponseModel,
-    FriendRequestAcceptedResponse
+    FriendRequestAcceptedResponse,
+    FriendRemovedResponse
 )
 
 from app.api.friends.friends_service import (
@@ -54,6 +55,16 @@ async def accept_friend_request(
 ):
     return await add_user_to_friends_list(user, request)
 
+
+@friends_router.post(
+    "/remove-friend",
+    response_model=FriendRemovedResponse
+)
+async def remove_friend(
+    request: OperationOnUserModel,
+    user: User = Depends(get_user_with_roles([Roles.BASE_USER]))
+):
+    pass
 
 @friends_router.get(
     "/view-friend-requests",
