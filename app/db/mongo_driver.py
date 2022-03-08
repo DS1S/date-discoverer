@@ -10,3 +10,4 @@ db = client.date_finder
 
 user_collection = db.get_collection("users")
 restaurant_collection = db.get_collection("restaurants")
+dates_collection = db.get_collection("dates")
