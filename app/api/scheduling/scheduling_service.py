@@ -3,18 +3,23 @@ from bson import ObjectId
 from fastapi import HTTPException, status
 
 from app.db.model_utils import PyObjectId
+
 from app.db.mongo_driver import (
     dates_collection,
     user_collection,
     restaurant_collection
 )
+
 from app.lib.auth.auth_models import User
+
 from app.api.scheduling.scheduling_models import (
     ScheduledDateRequestModel,
     ScheduledDateModel,
     ScheduledDateModelResponse,
     DateStatus
 )
+
+from app.lib.emails.email_processing import send_templated_email
 
 
 async def _lookup_schedule(user: User, schedule_id: PyObjectId):
@@ -147,6 +152,16 @@ async def accept_date_request_from_sender(
         success=True,
         **res.dict()
     )
+
+    sender = await user_collection.find_one({"_id": res.sender_id})
+
+    send_templated_email(
+        "accepted_date.html",
+        f"Your Date Has Been Accepted!",
+        [sender["email"]],
+        user_email=user.email
+    )
+
     res.status = DateStatus.APPROVED
     return res
 
@@ -170,5 +185,15 @@ async def reject_date_request_from_sender(
         success=True,
         **res.dict()
     )
+
+    sender = await user_collection.find_one({"_id": res.sender_id})
+
+    send_templated_email(
+        "rejected_date.html",
+        f"About Your Date With {user.email}",
+        [sender["email"]],
+        user_email=user.email
+    )
+
     res.status = DateStatus.REJECTED
     return res
