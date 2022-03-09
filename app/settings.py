@@ -17,5 +17,8 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = Field(default="date-finder-be", env="PROJECT_NAME")
     PORT: str = Field(default="8080", env="PORT")
 
+    GMAIL_USER: str = Field(default="", env="GMAIL_USER")
+    GMAIL_PASSWORD: str = Field(default="", env="GMAIL_USER")
+
 
 settings = Settings()
