@@ -1,0 +1,29 @@
+name: Deployment
+
+on:
+  workflow_dispatch:
+
+
+jobs:
+  deploy-api:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+      
+      
+      - name: Deploy Date Finder
+        uses: AkhileshNS/heroku-deploy@v3.12.12
+        with:
+          heroku_api_key: ${{secrets.HEROKU_API_KEY}}
+          heroku_email: ${{secrets.HEROKU_EMAIL}}
+          heroku_app_name: "datefinderproject"
+          buildpack: https://github.com/heroku/heroku-buildpack-python
+
+          
+      - run: echo "🍺🎉🥳 Date Finder Successfully Deployed! 🥳🎉🍺"
