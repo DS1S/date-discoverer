@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, Path, Query
 
@@ -14,12 +14,13 @@ from app.lib.auth.auth_service import get_user_with_roles
 from app.api.scheduling.scheduling_service import (
     retrieve_all_dates_belonging_to_user,
     send_date_request_to_receiver,
-    accept_date_request_from_sender
+    accept_date_request_from_sender,
+    reject_date_request_from_sender
 )
 from app.api.scheduling.scheduling_models import (
     ScheduledDateRequestModel,
     ScheduledDateModelResponse,
-    Status
+    DateStatus
 )
 
 scheduling_router = APIRouter()
@@ -30,10 +31,10 @@ scheduling_router = APIRouter()
     response_model=List[ScheduledDateModel]
 )
 async def get_schedule_requests(
-    user: User = Depends(get_user_with_roles([Roles.BASE_USER])),
-    status: Status = Query(Status.PENDING)
+    status: DateStatus = Query(...),
+    user: User = Depends(get_user_with_roles([Roles.BASE_USER]))
 ):
-    return await retrieve_all_dates_belonging_to_user(user)
+    return await retrieve_all_dates_belonging_to_user(user, status)
 
 
 @scheduling_router.post(
@@ -67,4 +68,4 @@ async def reject_date_request(
     schedule_id: PyObjectId = Path(..., alias="scheduleId"),
     user: User = Depends(get_user_with_roles([Roles.BASE_USER]))
 ):
-    pass
+    return await reject_date_request_from_sender(schedule_id, user)

@@ -20,9 +20,9 @@ async def _find_user_to_operate_on(email):
     user_to_process = await user_collection.find_one({"email": email})
 
     if not user_to_process:
-        HTTPException(
+        raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"User with email <{email} not found."
+            detail=f"User with email <{email}> not found."
         )
 
     return user_to_process
@@ -97,14 +97,31 @@ async def add_to_friend_requests_of_user(
     user: User,
     request: OperationOnUserModel
 ):
-    user_to_send = await _find_user_to_operate_on(request.email)
+    user_to_send = User(**(await _find_user_to_operate_on(request.email)))
 
-    if user.id in user_to_send["blockedUsers"]:
+    if user.id in user_to_send.blocked_users:
         return {
-            "friend_request_sent": True,
+            "friend_request_sent": False,
             "date_sent": date.today(),
             "msg": f"User with email {request.email}"
-                   f"has you blocked, no friend request was sent."
+                   f" has you blocked, no friend request was sent."
+        }
+
+    if user.id in user_to_send.friends:
+        return {
+            "friend_request_sent": False,
+            "date_sent": date.today(),
+            "msg": f"User with email {request.email}"
+                   f" already has you added."
+        }
+
+    friend_request_emails = [req.email for req in user_to_send.friend_requests]
+    if user.email in friend_request_emails:
+        return {
+            "friend_request_sent": False,
+            "date_sent": date.today(),
+            "msg": f"User with email {request.email}"
+                   f" is pending previous friend request."
         }
 
     await user_collection.find_one_and_update(
@@ -184,13 +201,26 @@ async def remove_friend_from_list(
     user: User,
     request: OperationOnUserModel
 ):
-    friend_to_remove = await _find_user_to_operate_on(request.email)
+    friend_to_remove = User(**(await _find_user_to_operate_on(request.email)))
 
-    user.friends.pop(user.friends.index(friend_to_remove["_id"]))
+    if friend_to_remove.id not in user.friends:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User with email <{request.email}> "
+                   f"not found in friends list."
+        )
+
+    user.friends.pop(user.friends.index(friend_to_remove.id))
+    friend_to_remove.friends.pop(friend_to_remove.friends.index(user.id))
 
     await user_collection.find_one_and_update(
         {"_id": user.id},
         {"$set": {"friends": user.friends}}
+    )
+
+    await user_collection.find_one_and_update(
+        {"_id": friend_to_remove.id},
+        {"$set": {"friends": friend_to_remove.friends}}
     )
 
     return {

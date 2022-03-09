@@ -14,7 +14,8 @@ from app.api.friends.friends_service import (
     add_user_to_block_list,
     add_user_to_friends_list,
     add_to_friend_requests_of_user,
-    show_all_friend_requests
+    show_all_friend_requests,
+    remove_friend_from_list
 )
 
 from app.lib.auth.auth_service import get_user_with_roles
@@ -64,7 +65,8 @@ async def remove_friend(
     request: OperationOnUserModel,
     user: User = Depends(get_user_with_roles([Roles.BASE_USER]))
 ):
-    pass
+    return await remove_friend_from_list(user, request)
+
 
 @friends_router.get(
     "/view-friend-requests",

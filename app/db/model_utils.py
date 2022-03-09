@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 
 from humps import camelize
 from bson import ObjectId
@@ -29,6 +29,21 @@ class Date(date):
     @classmethod
     def validate(cls, v):
         date.fromisoformat(v)
+        return v
+
+    @classmethod
+    def __modify_schema__(cls, field_schema):
+        field_schema.update(type="string")
+
+
+class DateTime(datetime):
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
+
+    @classmethod
+    def validate(cls, v):
+        datetime.fromisoformat(v)
         return v
 
     @classmethod
