@@ -4,5 +4,6 @@ motor
 pyhumps
 python-jose[cryptography]
 python-multipart
+jinja2
 passlib[bcrypt]
 pymongo[srv]
